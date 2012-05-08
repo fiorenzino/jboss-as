@@ -32,6 +32,8 @@ import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_REDEPLOY_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_REMOVE_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_REPLACE_OPERATION;
+import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_START_OPERATION;
+import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_STOP_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_UNDEPLOY_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.INPUT_STREAM_INDEX;
 import static org.jboss.as.controller.client.helpers.ClientConstants.METADATA;
@@ -111,6 +113,14 @@ public abstract class AbstractServerDeploymentManager implements ServerDeploymen
             case DEPLOY: {
                 configureDeploymentOperation(step, DEPLOYMENT_DEPLOY_OPERATION, uniqueName);
                 step.get(METADATA).set(plan.getMetadata().getModelNode());
+                break;
+            }
+            case START: {
+                configureDeploymentOperation(step, DEPLOYMENT_START_OPERATION, uniqueName);
+                break;
+            }
+            case STOP: {
+                configureDeploymentOperation(step, DEPLOYMENT_STOP_OPERATION, uniqueName);
                 break;
             }
             case FULL_REPLACE: {

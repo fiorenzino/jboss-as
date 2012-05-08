@@ -70,7 +70,7 @@ public class OSGiBundleLifecyleTestCase extends AbstractOSGiTestCase {
     }
 
     @Test
-    public void testBundleActive() throws Exception {
+    public void testBundleLifecycle() throws Exception {
 
         // Test http endpoint without attached osgi service
         String response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, 10, TimeUnit.SECONDS);
@@ -82,13 +82,50 @@ public class OSGiBundleLifecyleTestCase extends AbstractOSGiTestCase {
         DomainDeploymentHelper domainDeployer = getDomainDeployer(testSupport);
         String runtimeName = domainDeployer.deploy(archive.getName(), input, false, SERVER_GROUPS);
         try {
+            // Verify initial state
             response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, TimeUnit.SECONDS);
             Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.INSTALLED, response);
+            // Explicit start through Bundle API
             response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle&cmd=start", 10, TimeUnit.SECONDS);
             Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.ACTIVE, response);
+            // Verify service value
             response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle&cmd=hello", 10, TimeUnit.SECONDS);
             Assert.assertEquals("good-bundle:0.0.0: hello", response);
+            // Explicit stop through Bundle API
             response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle&cmd=stop", 10, TimeUnit.SECONDS);
+            Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.RESOLVED, response);
+        } finally {
+            domainDeployer.undeploy(runtimeName, SERVER_GROUPS);
+        }
+    }
+
+    @Test
+    @Ignore("start/stop unsupported")
+    public void testBundleLifecycleOperations() throws Exception {
+
+        // Test http endpoint without attached osgi service
+        String response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, 10, TimeUnit.SECONDS);
+        Assert.assertEquals("Bundle not available: good-bundle", response);
+
+        // Deploy the service bundle
+        JavaArchive archive = getGoodBundleArchive();
+        InputStream input = archive.as(ZipExporter.class).exportAsInputStream();
+        DomainDeploymentHelper domainDeployer = getDomainDeployer(testSupport);
+        String runtimeName = domainDeployer.deploy(archive.getName(), input, false, SERVER_GROUPS);
+        try {
+            // Verify initial state
+            response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, TimeUnit.SECONDS);
+            Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.INSTALLED, response);
+            // Explicit start through management API
+            domainDeployer.start(runtimeName, SERVER_GROUPS);
+            response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, TimeUnit.SECONDS);
+            Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.ACTIVE, response);
+            // Verify service value
+            response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle&cmd=hello", 10, TimeUnit.SECONDS);
+            Assert.assertEquals("good-bundle:0.0.0: hello", response);
+            // Explicit stop through management API
+            domainDeployer.stop(runtimeName, SERVER_GROUPS);
+            response = HttpRequest.get(getHttpEndpointURL() + "?bnd=good-bundle", 10, TimeUnit.SECONDS);
             Assert.assertEquals("good-bundle:0.0.0: state==" + Bundle.RESOLVED, response);
         } finally {
             domainDeployer.undeploy(runtimeName, SERVER_GROUPS);

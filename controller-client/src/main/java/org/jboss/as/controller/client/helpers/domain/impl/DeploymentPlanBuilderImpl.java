@@ -33,6 +33,7 @@ import java.net.URLConnection;
 
 import org.jboss.as.controller.client.helpers.domain.AddDeploymentPlanBuilder;
 import org.jboss.as.controller.client.helpers.domain.DeployDeploymentPlanBuilder;
+import org.jboss.as.controller.client.helpers.domain.DeploymentActionsCompleteBuilder;
 import org.jboss.as.controller.client.helpers.domain.DeploymentPlanBuilder;
 import org.jboss.as.controller.client.helpers.domain.DuplicateDeploymentNameException;
 import org.jboss.as.controller.client.helpers.domain.RemoveDeploymentPlanBuilder;
@@ -129,6 +130,16 @@ class DeploymentPlanBuilderImpl extends AbstractDeploymentPlanBuilder implements
         DeploymentActionImpl mod = DeploymentActionImpl.getDeployAction(key);
         DeploymentSetPlanImpl newSet = currentSet.addAction(mod);
         return new DeployDeploymentPlanBuilderImpl(this, newSet);
+    }
+
+    @Override
+    public DeploymentActionsCompleteBuilder start(String key) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DeploymentActionsCompleteBuilder stop(String key) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

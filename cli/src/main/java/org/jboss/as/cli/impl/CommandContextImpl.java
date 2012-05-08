@@ -98,6 +98,8 @@ import org.jboss.as.cli.handlers.PrintWorkingNodeHandler;
 import org.jboss.as.cli.handlers.QuitHandler;
 import org.jboss.as.cli.handlers.ReadAttributeHandler;
 import org.jboss.as.cli.handlers.ReadOperationHandler;
+import org.jboss.as.cli.handlers.StartHandler;
+import org.jboss.as.cli.handlers.StopHandler;
 import org.jboss.as.cli.handlers.UndeployHandler;
 import org.jboss.as.cli.handlers.VersionHandler;
 import org.jboss.as.cli.handlers.batch.BatchClearHandler;
@@ -343,6 +345,8 @@ class CommandContextImpl implements CommandContext {
 
         // deployment
         cmdRegistry.registerHandler(new DeployHandler(this), "deploy");
+        cmdRegistry.registerHandler(new StartHandler(this), "start");
+        cmdRegistry.registerHandler(new StopHandler(this), "stop");
         cmdRegistry.registerHandler(new UndeployHandler(this), "undeploy");
         cmdRegistry.registerHandler(new DeploymentInfoHandler(this), "deployment-info");
 

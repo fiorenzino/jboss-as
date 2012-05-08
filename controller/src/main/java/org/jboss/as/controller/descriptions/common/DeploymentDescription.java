@@ -56,6 +56,8 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.TAI
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.TO_REPLACE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.TYPE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UNDEPLOY;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.START;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.STOP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UPLOAD_DEPLOYMENT_BYTES;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UPLOAD_DEPLOYMENT_STREAM;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UPLOAD_DEPLOYMENT_URL;
@@ -307,6 +309,26 @@ public class DeploymentDescription {
         root.get(REQUEST_PROPERTIES, RUNTIME_NAME, MIN_LENGTH).set(1);
         root.get(REQUEST_PROPERTIES, RUNTIME_NAME, NILLABLE).set(false);
         getDeploymentContentParamDescription(root, bundle);
+        root.get(REPLY_PROPERTIES).setEmptyObject();
+        return root;
+    }
+
+    public static final ModelNode getStartDeploymentOperation(Locale locale) {
+        final ResourceBundle bundle = getResourceBundle(locale);
+        final ModelNode root = new ModelNode();
+        root.get(OPERATION_NAME).set(START);
+        root.get(DESCRIPTION).set(bundle.getString("deployment.start"));
+        root.get(REQUEST_PROPERTIES).setEmptyObject();
+        root.get(REPLY_PROPERTIES).setEmptyObject();
+        return root;
+    }
+
+    public static final ModelNode getStopDeploymentOperation(Locale locale) {
+        final ResourceBundle bundle = getResourceBundle(locale);
+        final ModelNode root = new ModelNode();
+        root.get(OPERATION_NAME).set(STOP);
+        root.get(DESCRIPTION).set(bundle.getString("deployment.stop"));
+        root.get(REQUEST_PROPERTIES).setEmptyObject();
         root.get(REPLY_PROPERTIES).setEmptyObject();
         return root;
     }

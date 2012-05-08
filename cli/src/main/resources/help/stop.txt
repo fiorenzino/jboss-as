@@ -1,0 +1,12 @@
+SYNOPSIS
+
+    stop name 
+    
+DESCRIPTION
+
+    Stops the deployment with the given name.
+    If the deployment name isn't specified, prints the list of all the existing deployments.
+
+ARGUMENTS
+
+ name                   - the name of the deployment to stop.

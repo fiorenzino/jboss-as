@@ -62,9 +62,7 @@ public class DomainDeploymentHelper {
             AddDeploymentPlanBuilder addBuilder = builder.add(name, input);
             for (String group : serverGroups) {
                 addBuilder = addBuilder.addMetadata(userdata);
-                if (start == false) {
-                    addBuilder = addBuilder.andNoStart();
-                }
+                addBuilder = (start == false ? addBuilder.andNoStart() : addBuilder);
                 DeploymentActionsCompleteBuilder completeBuilder = addBuilder.andDeploy();
                 builder = completeBuilder.toServerGroup(group);
             }
@@ -87,6 +85,44 @@ public class DomainDeploymentHelper {
             DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
             for (String group : serverGroups) {
                 DeploymentActionsCompleteBuilder completeBuilder = builder.undeploy(runtimeName).remove(runtimeName);
+                builder = completeBuilder.toServerGroup(group);
+            }
+            DeploymentPlan plan = builder.build();
+            Future<DeploymentPlanResult> future = deploymentManager.execute(plan);
+            planResult = future.get();
+        } catch (Exception ex) {
+            throw new DomainDeploymentException(ex);
+        }
+        Throwable failure = getDeploymentFailure(planResult);
+        if (failure != null)
+            throw new DomainDeploymentException(planResult, failure);
+    }
+
+    public void start(String runtimeName, List<String> serverGroups) throws DomainDeploymentException {
+        DeploymentPlanResult planResult;
+        try {
+            DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
+            for (String group : serverGroups) {
+                DeploymentActionsCompleteBuilder completeBuilder = builder.start(runtimeName);
+                builder = completeBuilder.toServerGroup(group);
+            }
+            DeploymentPlan plan = builder.build();
+            Future<DeploymentPlanResult> future = deploymentManager.execute(plan);
+            planResult = future.get();
+        } catch (Exception ex) {
+            throw new DomainDeploymentException(ex);
+        }
+        Throwable failure = getDeploymentFailure(planResult);
+        if (failure != null)
+            throw new DomainDeploymentException(planResult, failure);
+    }
+
+    public void stop(String runtimeName, List<String> serverGroups) throws DomainDeploymentException {
+        DeploymentPlanResult planResult;
+        try {
+            DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
+            for (String group : serverGroups) {
+                DeploymentActionsCompleteBuilder completeBuilder = builder.stop(runtimeName);
                 builder = completeBuilder.toServerGroup(group);
             }
             DeploymentPlan plan = builder.build();

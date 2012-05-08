@@ -47,6 +47,14 @@ public class DeploymentActionImpl implements DeploymentAction, Serializable {
         return new DeploymentActionImpl(Type.REDEPLOY, deploymentName, null, null, false, null);
     }
 
+    public static DeploymentActionImpl getStartAction(String deploymentName) {
+        return new DeploymentActionImpl(Type.START, deploymentName, null, null, false, null);
+    }
+
+    public static DeploymentActionImpl getStopAction(String deploymentName) {
+        return new DeploymentActionImpl(Type.STOP, deploymentName, null, null, false, null);
+    }
+
     public static DeploymentActionImpl getUndeployAction(String deploymentName) {
         return new DeploymentActionImpl(Type.UNDEPLOY, deploymentName, null, null, false, null);
     }

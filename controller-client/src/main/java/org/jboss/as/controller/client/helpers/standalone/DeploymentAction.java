@@ -39,6 +39,14 @@ public interface DeploymentAction {
          */
         DEPLOY,
         /**
+         * Start the deployment in the runtime. It must have been deployed.
+         */
+        START,
+        /**
+         * Stop the deployment in the runtime. It must have been deployed.
+         */
+        STOP,
+        /**
          * Replace existing content in the runtime. The new content must have
          * been previously {@link #ADD added to the content repository}.
          */

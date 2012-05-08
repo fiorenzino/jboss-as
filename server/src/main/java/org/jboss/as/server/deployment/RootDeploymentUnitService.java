@@ -47,6 +47,7 @@ final class RootDeploymentUnitService extends AbstractDeploymentUnitService {
     private final ImmutableManagementResourceRegistration registration;
     private final ManagementResourceRegistration mutableRegistration;
     private final DeploymentMetadata userdata;
+    private final Phase stopPhase;
     private final ServiceVerificationHandler serviceVerificationHandler;
     private Resource resource;
     private final AbstractVaultReader vaultReader;
@@ -64,7 +65,7 @@ final class RootDeploymentUnitService extends AbstractDeploymentUnitService {
      * @param serviceVerificationHandler
      * @param vaultReader
      */
-    public RootDeploymentUnitService(final String name, final String managementName, final DeploymentUnit parent, final ImmutableManagementResourceRegistration registration, final ManagementResourceRegistration mutableRegistration, Resource resource, DeploymentMetadata userdata, final ServiceVerificationHandler serviceVerificationHandler, final AbstractVaultReader vaultReader) {
+    public RootDeploymentUnitService(final String name, final String managementName, final DeploymentUnit parent, final ImmutableManagementResourceRegistration registration, final ManagementResourceRegistration mutableRegistration, final Resource resource, final DeploymentMetadata userdata, final Phase stopPhase, final ServiceVerificationHandler serviceVerificationHandler, final AbstractVaultReader vaultReader) {
         this.serviceVerificationHandler = serviceVerificationHandler;
         assert name != null : "name is null";
         this.name = name;
@@ -73,8 +74,19 @@ final class RootDeploymentUnitService extends AbstractDeploymentUnitService {
         this.registration = registration;
         this.mutableRegistration = mutableRegistration;
         this.userdata = userdata;
+        this.stopPhase = stopPhase;
         this.resource = resource;
         this.vaultReader = vaultReader;
+    }
+
+    @Override
+    protected Phase getStartPhase() {
+        return Phase.values()[0];
+    }
+
+    @Override
+    protected Phase getStopPhase() {
+        return stopPhase;
     }
 
     protected DeploymentUnit createAndInitializeDeploymentUnit(final ServiceRegistry registry) {

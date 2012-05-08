@@ -33,6 +33,7 @@ import org.jboss.msc.service.DelegatingServiceRegistry;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -52,21 +53,23 @@ final class DeploymentUnitPhaseService<T> implements Service<T> {
     private final InjectedValue<DeployerChains> deployerChainsInjector = new InjectedValue<DeployerChains>();
     private final DeploymentUnit deploymentUnit;
     private final Phase phase;
+    private final Phase stopPhase;
     private final AttachmentKey<T> valueKey;
     private final List<AttachedDependency> injectedAttachedDependencies = new ArrayList<AttachedDependency>();
 
-    private DeploymentUnitPhaseService(final DeploymentUnit deploymentUnit, final Phase phase, final AttachmentKey<T> valueKey) {
+    private DeploymentUnitPhaseService(final DeploymentUnit deploymentUnit, final Phase phase, final AttachmentKey<T> valueKey, final Phase stopPhase) {
         this.deploymentUnit = deploymentUnit;
         this.phase = phase;
         this.valueKey = valueKey;
+        this.stopPhase = stopPhase;
     }
 
-    private static <T> DeploymentUnitPhaseService<T> create(final DeploymentUnit deploymentUnit, final Phase phase, AttachmentKey<T> valueKey) {
-        return new DeploymentUnitPhaseService<T>(deploymentUnit, phase, valueKey);
+    private static <T> DeploymentUnitPhaseService<T> create(final DeploymentUnit deploymentUnit, final Phase phase, final AttachmentKey<T> valueKey, final Phase stopPhase) {
+        return new DeploymentUnitPhaseService<T>(deploymentUnit, phase, valueKey, stopPhase);
     }
 
-    static DeploymentUnitPhaseService<?> create(final DeploymentUnit deploymentUnit, final Phase phase) {
-        return create(deploymentUnit, phase, phase.getPhaseKey());
+    static DeploymentUnitPhaseService<?> create(final DeploymentUnit deploymentUnit, final Phase phase, final Phase stopPhase) {
+        return create(deploymentUnit, phase, phase.getPhaseKey(), stopPhase);
     }
 
     @SuppressWarnings("unchecked")
@@ -84,8 +87,11 @@ final class DeploymentUnitPhaseService<T> implements Service<T> {
         final DeploymentUnitPhaseService<?> phaseService;
         if(nextPhase != null) {
             final ServiceName serviceName = parent == null ? Services.deploymentUnitName(name, nextPhase) : Services.deploymentUnitName(parent.getName(), name, nextPhase);
-            phaseService = DeploymentUnitPhaseService.create(deploymentUnit, nextPhase);
+            phaseService = DeploymentUnitPhaseService.create(deploymentUnit, nextPhase, stopPhase);
             phaseServiceBuilder = serviceTarget.addService(serviceName, phaseService);
+            if (nextPhase == stopPhase) {
+                phaseServiceBuilder.setInitialMode(Mode.NEVER);
+            }
         } else {
             phaseServiceBuilder = null;
             phaseService = null;
@@ -178,6 +184,10 @@ final class DeploymentUnitPhaseService<T> implements Service<T> {
 
     public synchronized T getValue() throws IllegalStateException, IllegalArgumentException {
         return deploymentUnit.getAttachment(valueKey);
+    }
+
+    DeploymentUnit getDeploymentUnit() {
+        return deploymentUnit;
     }
 
     InjectedValue<DeployerChains> getDeployerChainsInjector() {

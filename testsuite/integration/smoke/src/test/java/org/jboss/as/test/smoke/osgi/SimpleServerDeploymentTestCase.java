@@ -127,14 +127,23 @@ public class SimpleServerDeploymentTestCase {
         // Deploy the bundle
         InputStream input = deployer.getDeployment(GOOD_BUNDLE);
         ServerDeploymentHelper server = new ServerDeploymentHelper(getModelControllerClient());
-        String runtimeName = server.deploy("auto-start", input, false);
+        String runtimeName = server.deploy(GOOD_BUNDLE, input, false);
 
         // Find the deployed bundle
         Bundle bundle = OSGiFrameworkUtils.getDeployedBundle(context, GOOD_BUNDLE, null);
         assertEquals("Bundle INSTALLED", Bundle.INSTALLED, bundle.getState());
 
-        server.undeploy(runtimeName);
-        assertEquals("Bundle UNINSTALLED", Bundle.UNINSTALLED, bundle.getState());
+        try {
+            server.start(runtimeName);
+            assertEquals("Bundle ACTIVE", Bundle.ACTIVE, bundle.getState());
+
+            server.stop(runtimeName);
+            assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
+
+        } finally {
+            server.undeploy(runtimeName);
+            assertEquals("Bundle UNINSTALLED", Bundle.UNINSTALLED, bundle.getState());
+        }
     }
 
     @Test

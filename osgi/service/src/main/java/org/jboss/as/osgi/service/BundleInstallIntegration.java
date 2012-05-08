@@ -118,7 +118,7 @@ public final class BundleInstallIntegration implements BundleInstallPlugin, Inte
             InputStream input = dep.getRoot().openStream();
             try {
                 ServerDeploymentHelper server = new ServerDeploymentHelper(deploymentManager);
-                server.deploy(contextName, input);
+                server.deploy(contextName, input, false);
             } finally {
                 if(input != null) try {
                     input.close();

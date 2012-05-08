@@ -57,9 +57,7 @@ public class ServerDeploymentHelper {
         try {
             DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
             AddDeploymentPlanBuilder addBuilder = builder.add(runtimeName, input).addMetadata(userdata);
-            if (start == false) {
-                addBuilder = addBuilder.andNoStart();
-            }
+            addBuilder = (start == false ? addBuilder.andNoStart() : addBuilder);
             builder = addBuilder.andDeploy();
             DeploymentPlan plan = builder.build();
             DeploymentAction action = builder.getLastAction();
@@ -100,6 +98,40 @@ public class ServerDeploymentHelper {
         try {
             DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
             builder = builder.undeploy(runtimeName).remove(runtimeName);
+            DeploymentPlan plan = builder.build();
+            DeploymentAction action = builder.getLastAction();
+            Future<ServerDeploymentPlanResult> future = deploymentManager.execute(plan);
+            ServerDeploymentPlanResult planResult = future.get();
+            actionResult = planResult.getDeploymentActionResult(action.getId());
+        } catch (Exception ex) {
+            throw new ServerDeploymentException(ex);
+        }
+        if (actionResult.getDeploymentException() != null)
+            throw new ServerDeploymentException(actionResult);
+    }
+
+    public void start(String runtimeName) throws ServerDeploymentException {
+        ServerDeploymentActionResult actionResult;
+        try {
+            DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
+            builder = builder.start(runtimeName);
+            DeploymentPlan plan = builder.build();
+            DeploymentAction action = builder.getLastAction();
+            Future<ServerDeploymentPlanResult> future = deploymentManager.execute(plan);
+            ServerDeploymentPlanResult planResult = future.get();
+            actionResult = planResult.getDeploymentActionResult(action.getId());
+        } catch (Exception ex) {
+            throw new ServerDeploymentException(ex);
+        }
+        if (actionResult.getDeploymentException() != null)
+            throw new ServerDeploymentException(actionResult);
+    }
+
+    public void stop(String runtimeName) throws ServerDeploymentException {
+        ServerDeploymentActionResult actionResult;
+        try {
+            DeploymentPlanBuilder builder = deploymentManager.newDeploymentPlan();
+            builder = builder.stop(runtimeName);
             DeploymentPlan plan = builder.build();
             DeploymentAction action = builder.getLastAction();
             Future<ServerDeploymentPlanResult> future = deploymentManager.execute(plan);

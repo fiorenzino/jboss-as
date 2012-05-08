@@ -25,6 +25,7 @@ package org.jboss.as.osgi.deployment;
 import static org.jboss.as.osgi.OSGiLogger.LOGGER;
 import static org.jboss.as.osgi.OSGiMessages.MESSAGES;
 
+import org.jboss.as.controller.client.helpers.ClientConstants.StartPolicy;
 import org.jboss.as.osgi.OSGiConstants;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.Attachments.BundleState;
@@ -50,7 +51,11 @@ public class BundleActivateProcessor implements DeploymentUnitProcessor {
         DeploymentUnit depUnit = phaseContext.getDeploymentUnit();
         Deployment deployment = depUnit.getAttachment(OSGiConstants.DEPLOYMENT_KEY);
         XBundle bundle = depUnit.getAttachment(OSGiConstants.BUNDLE_KEY);
-        if (bundle != null && deployment.isAutoStart() && bundle.isResolved()) {
+        if (bundle == null || !bundle.isResolved())
+            return;
+
+        StartPolicy startPolicy = BundleDeploymentProcessor.getStartPolicy(depUnit);
+        if (deployment.isAutoStart() || startPolicy == StartPolicy.EXPLICIT) {
             try {
                 bundle.start(Bundle.START_ACTIVATION_POLICY);
                 depUnit.putAttachment(Attachments.BUNDLE_STATE_KEY, BundleState.ACTIVE);
@@ -64,10 +69,14 @@ public class BundleActivateProcessor implements DeploymentUnitProcessor {
     public void undeploy(final DeploymentUnit depUnit) {
         Deployment deployment = depUnit.getAttachment(OSGiConstants.DEPLOYMENT_KEY);
         XBundle bundle = depUnit.getAttachment(OSGiConstants.BUNDLE_KEY);
-        if (bundle != null && deployment.isAutoStart()) {
+        if (bundle == null || !bundle.isResolved())
+            return;
+
+        StartPolicy startPolicy = BundleDeploymentProcessor.getStartPolicy(depUnit);
+        if (deployment.isAutoStart() || startPolicy == StartPolicy.EXPLICIT) {
             try {
                 // Server shutdown should not modify the persistent start setting
-                bundle.stop(Bundle.STOP_TRANSIENT);
+                bundle.stop(startPolicy != StartPolicy.EXPLICIT ? Bundle.STOP_TRANSIENT : 0);
                 depUnit.putAttachment(Attachments.BUNDLE_STATE_KEY, BundleState.RESOLVED);
             } catch (BundleException ex) {
                 LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);

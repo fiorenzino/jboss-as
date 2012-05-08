@@ -69,13 +69,24 @@ public abstract class AbstractDeploymentUnitService implements Service<Deploymen
         deploymentUnit = createAndInitializeDeploymentUnit(context.getController().getServiceContainer());
         deploymentUnit.putAttachment(Attachments.STATUS_LISTENER, listener);
 
-        final ServiceName serviceName = deploymentUnit.getServiceName().append(FIRST_PHASE_NAME);
-        final Phase firstPhase = Phase.values()[0];
-        final DeploymentUnitPhaseService<?> phaseService = DeploymentUnitPhaseService.create(deploymentUnit, firstPhase);
+        final ServiceName serviceName = deploymentUnit.getServiceName().append(getStartPhase().name());
+        final Phase startPhase = getStartPhase();
+        final Phase stopPhase = getStopPhase();
+        final DeploymentUnitPhaseService<?> phaseService = DeploymentUnitPhaseService.create(deploymentUnit, startPhase, stopPhase);
         final ServiceBuilder<?> phaseServiceBuilder = target.addService(serviceName, phaseService);
         phaseServiceBuilder.addDependency(Services.JBOSS_DEPLOYMENT_CHAINS, DeployerChains.class, phaseService.getDeployerChainsInjector());
         phaseServiceBuilder.install();
     }
+
+    /**
+     * Get the phase in the deployment chain at which to stop.
+     */
+    protected abstract Phase getStartPhase();
+
+    /**
+     * Get the phase in the deployment chain at which to stop.
+     */
+    protected abstract Phase getStopPhase();
 
     /**
      * Template method required for implementations to create and fully initialize a deployment unit instance.  This method

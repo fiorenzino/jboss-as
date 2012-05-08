@@ -243,6 +243,18 @@ class DeploymentPlanBuilderImpl
     }
 
     @Override
+    public DeploymentPlanBuilder start(String key) {
+        DeploymentActionImpl mod = DeploymentActionImpl.getStartAction(key);
+        return new DeploymentPlanBuilderImpl(this, mod);
+    }
+
+    @Override
+    public DeploymentPlanBuilder stop(String key) {
+        DeploymentActionImpl mod = DeploymentActionImpl.getStopAction(key);
+        return new DeploymentPlanBuilderImpl(this, mod);
+    }
+
+    @Override
     public UndeployDeploymentPlanBuilder undeploy(String key) {
         DeploymentActionImpl mod = DeploymentActionImpl.getUndeployAction(key);
         return new DeploymentPlanBuilderImpl(this, mod);

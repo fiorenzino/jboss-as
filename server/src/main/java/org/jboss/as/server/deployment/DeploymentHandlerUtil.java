@@ -18,16 +18,20 @@
  */
 package org.jboss.as.server.deployment;
 
+import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_METADATA_START_POLICY;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CONTENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEPLOYMENT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUNTIME_NAME;
 import static org.jboss.as.server.deployment.AbstractDeploymentHandler.getContents;
+import static org.jboss.as.server.deployment.Attachments.DEPLOYMENT_METADATA;
 import static org.jboss.msc.service.ServiceController.Mode.REMOVE;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.as.controller.OperationContext;
@@ -36,7 +40,10 @@ import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ServiceVerificationHandler;
+import org.jboss.as.controller.OperationContext.Stage;
 import org.jboss.as.controller.client.DeploymentMetadata;
+import org.jboss.as.controller.client.helpers.ClientConstants;
+import org.jboss.as.controller.client.helpers.ClientConstants.StartPolicy;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
@@ -45,6 +52,7 @@ import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
@@ -61,6 +69,8 @@ import org.jboss.vfs.VirtualFile;
 public class DeploymentHandlerUtil {
 
     private static final ServerLogger log = ServerLogger.DEPLOYMENT_LOGGER;
+
+    private static final Phase DEFERRED_TARGET_PHASE = Phase.CONFIGURE_MODULE;
 
     static class ContentItem {
         // either hash or <path, relativeTo, isArchive>
@@ -157,7 +167,10 @@ public class DeploymentHandlerUtil {
         }
         controllers.add(contentService);
 
-        final RootDeploymentUnitService service = new RootDeploymentUnitService(deploymentUnitName, managementName, null, registration, mutableRegistration, deploymentResource, userdata, verificationHandler, vaultReader);
+        final String policyValue = (String) userdata.getValue(ClientConstants.DEPLOYMENT_METADATA_START_POLICY);
+        final Phase stopPhase = (StartPolicy.parse(policyValue) == StartPolicy.DEFERRED ? DEFERRED_TARGET_PHASE : null);
+        final RootDeploymentUnitService service = new RootDeploymentUnitService(deploymentUnitName, managementName, null, registration, mutableRegistration,
+                deploymentResource, userdata, stopPhase, verificationHandler, vaultReader);
         final ServiceController<DeploymentUnit> deploymentUnitController = serviceTarget.addService(deploymentUnitServiceName, service)
                 .addDependency(Services.JBOSS_DEPLOYMENT_CHAINS, DeployerChains.class, service.getDeployerChainsInjector())
                 .addDependency(DeploymentMountProvider.SERVICE_NAME, DeploymentMountProvider.class, service.getServerDeploymentRepositoryInjector())
@@ -280,6 +293,63 @@ public class DeploymentHandlerUtil {
                 }
             }, OperationContext.Stage.RUNTIME);
         }
+    }
+
+    public static void start(final OperationContext context, final String deploymentUnitName) {
+        if (context.isNormalServer()) {
+            context.addStep(new OperationStepHandler() {
+                public void execute(OperationContext context, ModelNode operation) {
+                    final ServiceRegistry serviceRegistry = context.getServiceRegistry(false);
+                    final ServiceName deploymentUnitServiceName = Services.deploymentUnitName(deploymentUnitName);
+                    final ServiceName phaseServiceName = deploymentUnitServiceName.append(DEFERRED_TARGET_PHASE.name());
+                    final ServiceController<?> controller = serviceRegistry.getService(phaseServiceName);
+                    if (controller != null) {
+                        // Set the start policy to EXPLICIT
+                        DeploymentUnitPhaseService<?> phaseService = (DeploymentUnitPhaseService<?>) controller.getService();
+                        setupExplicitStartPolicy(phaseService.getDeploymentUnit());
+                        // Start the DEFERRED_TARGET_PHASE phase
+                        controller.setMode(Mode.ACTIVE);
+                    }
+                    context.completeStep();
+                }
+            }, OperationContext.Stage.RUNTIME);
+
+            ServiceVerificationHandler verificationHandler = new ServiceVerificationHandler();
+            context.addStep(verificationHandler, Stage.VERIFY);
+
+            context.completeStep(OperationContext.RollbackHandler.NOOP_ROLLBACK_HANDLER);
+        }
+    }
+
+    public static void stop(final OperationContext context, final String deploymentUnitName) {
+        if (context.isNormalServer()) {
+            context.addStep(new OperationStepHandler() {
+                public void execute(OperationContext context, ModelNode operation) {
+                    final ServiceName deploymentUnitServiceName = Services.deploymentUnitName(deploymentUnitName);
+                    final ServiceName blockServiceName = deploymentUnitServiceName.append(DEFERRED_TARGET_PHASE.name());
+                    ServiceController<?> controller = context.getServiceRegistry(false).getService(blockServiceName);
+                    if (controller != null) {
+                        // Set the start policy to EXPLICIT
+                        DeploymentUnitPhaseService<?> phaseService = (DeploymentUnitPhaseService<?>) controller.getService();
+                        setupExplicitStartPolicy(phaseService.getDeploymentUnit());
+                        controller.setMode(Mode.NEVER);
+                    }
+                    context.completeStep();
+                }
+            }, OperationContext.Stage.RUNTIME);
+
+            ServiceVerificationHandler verificationHandler = new ServiceVerificationHandler();
+            context.addStep(verificationHandler, Stage.VERIFY);
+
+            context.completeStep(OperationContext.RollbackHandler.NOOP_ROLLBACK_HANDLER);
+        }
+    }
+
+    private static void setupExplicitStartPolicy(DeploymentUnit depUnit) {
+        DeploymentMetadata metadata = depUnit.getAttachment(DEPLOYMENT_METADATA);
+        Map<String, Object> userdata = new HashMap<String, Object>(metadata.getUserdata());
+        userdata.put(DEPLOYMENT_METADATA_START_POLICY, StartPolicy.EXPLICIT.toString());
+        depUnit.putAttachment(DEPLOYMENT_METADATA, new DeploymentMetadata(userdata));
     }
 
     public static void undeploy(final OperationContext context, final String deploymentUnitName, final AbstractVaultReader vaultReader) {

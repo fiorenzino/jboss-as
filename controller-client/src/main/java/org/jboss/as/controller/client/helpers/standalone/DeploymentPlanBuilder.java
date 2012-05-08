@@ -222,6 +222,24 @@ public interface DeploymentPlanBuilder {
     DeploymentPlanBuilder deploy(String deploymentName);
 
     /**
+     * Indicates the specified deployment content should be started.
+     *
+     * @param deploymentName unique identifier of the deployment content
+     *
+     * @return a builder that can continue building the overall deployment plan
+     */
+    DeploymentPlanBuilder start(String deploymentName);
+
+    /**
+     * Indicates the specified deployment content should be stoped.
+     *
+     * @param deploymentName unique identifier of the deployment content
+     *
+     * @return a builder that can continue building the overall deployment plan
+     */
+    DeploymentPlanBuilder stop(String deploymentName);
+
+    /**
      * Indicates the specified deployment content should be undeployed.
      *
      * @param deploymentName unique identifier of the deployment content

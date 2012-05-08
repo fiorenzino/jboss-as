@@ -131,16 +131,16 @@ public class BundleDeploymentProcessor implements DeploymentUnitProcessor {
         depUnit.removeAttachment(OSGiConstants.DEPLOYMENT_KEY);
     }
 
-    private DeploymentMetadata getDeploymentMetadata(final DeploymentUnit depUnit) {
+    static StartPolicy getStartPolicy(DeploymentUnit depUnit) {
+        DeploymentMetadata metadata = getDeploymentMetadata(depUnit);
+        return StartPolicy.parse((String) metadata.getUserdata().get(DEPLOYMENT_METADATA_START_POLICY));
+    }
+
+    static DeploymentMetadata getDeploymentMetadata(final DeploymentUnit depUnit) {
         DeploymentMetadata metadata = depUnit.getAttachment(Attachments.DEPLOYMENT_METADATA);
         if (metadata == null && depUnit.getParent() != null) {
             metadata = depUnit.getParent().getAttachment(Attachments.DEPLOYMENT_METADATA);
         }
         return metadata;
-    }
-
-    private StartPolicy getStartPolicy(DeploymentUnit depUnit) {
-        DeploymentMetadata metadata = getDeploymentMetadata(depUnit);
-        return StartPolicy.parse((String) metadata.getUserdata().get(DEPLOYMENT_METADATA_START_POLICY));
     }
 }

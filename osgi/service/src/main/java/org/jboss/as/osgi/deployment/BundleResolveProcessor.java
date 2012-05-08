@@ -25,6 +25,8 @@ package org.jboss.as.osgi.deployment;
 import static org.jboss.as.osgi.OSGiLogger.LOGGER;
 
 import java.util.Collections;
+
+import org.jboss.as.controller.client.helpers.ClientConstants.StartPolicy;
 import org.jboss.as.osgi.OSGiConstants;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.Attachments.BundleState;
@@ -58,14 +60,16 @@ public class BundleResolveProcessor implements DeploymentUnitProcessor {
         DeploymentUnit depUnit = phaseContext.getDeploymentUnit();
         Deployment deployment = depUnit.getAttachment(OSGiConstants.DEPLOYMENT_KEY);
         XBundle bundle = depUnit.getAttachment(OSGiConstants.BUNDLE_KEY);
-        if (bundle == null || !deployment.isAutoStart())
+        if (bundle == null)
             return;
 
         // Only process the top level deployment
         if (depUnit.getParent() != null)
             return;
 
-        resolveBundle(phaseContext, bundle);
+        StartPolicy startPolicy = BundleDeploymentProcessor.getStartPolicy(depUnit);
+        if (deployment.isAutoStart() || startPolicy == StartPolicy.EXPLICIT)
+            resolveBundle(phaseContext, bundle);
     }
 
     static void resolveBundle(DeploymentPhaseContext phaseContext, XBundle bundle) {

@@ -58,6 +58,16 @@ public class SubDeploymentUnitService extends AbstractDeploymentUnitService {
         this.vaultReader = vaultReader;
     }
 
+    @Override
+    protected Phase getStartPhase() {
+        return Phase.values()[0];
+    }
+
+    @Override
+    protected Phase getStopPhase() {
+        return null;
+    }
+
     protected DeploymentUnit createAndInitializeDeploymentUnit(ServiceRegistry registry) {
         final String deploymentName = deploymentRoot.getRootName();
         final DeploymentUnit deploymentUnit = new DeploymentUnitImpl(parent, deploymentName, registry);

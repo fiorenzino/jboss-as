@@ -51,6 +51,8 @@ public class ClientConstants {
     public static final String TO_REPLACE = "to-replace";
 
     public static final String DEPLOYMENT_DEPLOY_OPERATION = "deploy";
+    public static final String DEPLOYMENT_START_OPERATION = "start";
+    public static final String DEPLOYMENT_STOP_OPERATION = "stop";
     public static final String DEPLOYMENT_FULL_REPLACE_OPERATION = "full-replace-deployment";
     public static final String DEPLOYMENT_REDEPLOY_OPERATION = "redeploy";
     public static final String DEPLOYMENT_REMOVE_OPERATION = "remove";
