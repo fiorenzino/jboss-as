@@ -19,24 +19,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.as.test.integration.osgi.resource;
+package org.jboss.as.test.smoke.osgi;
+
+import java.io.InputStream;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.as.test.smoke.osgi.bundleA.ResourceInjectionActivator;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
-
-import javax.annotation.Resource;
-import javax.inject.Inject;
-import javax.sql.DataSource;
-import java.io.InputStream;
+import org.osgi.framework.BundleActivator;
 
 /**
  * An example of OSGi resource injection.
@@ -45,24 +46,22 @@ import java.io.InputStream;
  * @since 02-Feb-2012
  */
 @RunWith(Arquillian.class)
-@Ignore("[AS7-3152] Cannot deploy OSGI bundle with datasource ")
-public class DataSourceInjectionTestCase {
+public class SimpleResourceInjectionTestCase {
 
     @Inject
     public Bundle bundle;
 
-    @Resource(name="java:jboss/datasources/ExampleDS")
-    public DataSource ds;
-
     @Deployment
     public static JavaArchive createdeployment() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "example-datasource");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "resource-injection.jar");
+        archive.addClasses(ResourceInjectionActivator.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
-                builder.addImportPackages(DataSource.class);
+                builder.addBundleActivator(ResourceInjectionActivator.class);
+                builder.addImportPackages(DataSource.class, BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -72,10 +71,10 @@ public class DataSourceInjectionTestCase {
     @Test
     public void testDataSourceInjection() throws Exception {
 
-        Assert.assertEquals(Bundle.RESOLVED, bundle.getState());
-        Assert.assertNotNull("DataSource not null", ds);
-
         bundle.start();
-        Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
+        Assert.assertEquals("H2", ResourceInjectionActivator.productName);
+
+        bundle.stop();
+        Assert.assertNull(ResourceInjectionActivator.productName);
     }
 }

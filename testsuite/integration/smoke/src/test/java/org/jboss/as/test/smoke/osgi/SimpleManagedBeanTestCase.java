@@ -44,8 +44,8 @@ import org.jboss.as.test.osgi.OSGiManagementOperations;
 import org.jboss.as.test.smoke.osgi.bundleA.ComplexBeanServlet;
 import org.jboss.as.test.smoke.osgi.bundleA.ComplexManagedBean;
 import org.jboss.as.test.smoke.osgi.bundleA.PaymentProviderActivatorPaypal;
-import org.jboss.as.test.smoke.osgi.bundleA.SimpleBeanServlet;
 import org.jboss.as.test.smoke.osgi.bundleA.PaymentProviderActivatorVisa;
+import org.jboss.as.test.smoke.osgi.bundleA.SimpleBeanServlet;
 import org.jboss.as.test.smoke.osgi.bundleA.SimpleManagedBean;
 import org.jboss.as.test.smoke.osgi.bundleB.PaymentProvider;
 import org.jboss.dmr.ModelNode;
@@ -60,6 +60,8 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Tests CDI deployments with OSGi metadata
@@ -114,7 +116,7 @@ public class SimpleManagedBeanTestCase {
                 builder.addBundleSymbolicName(COMPLEX_CDI_JAR);
                 builder.addBundleManifestVersion(2);
                 builder.addImportPackages(PaymentProvider.class);
-                builder.addImportPackages(ManagedBean.class);
+                builder.addImportPackages(BundleContext.class, ServiceTracker.class, ManagedBean.class);
                 return builder.openStream();
             }
         });
