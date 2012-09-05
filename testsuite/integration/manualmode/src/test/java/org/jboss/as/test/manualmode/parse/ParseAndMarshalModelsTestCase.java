@@ -21,10 +21,7 @@
 */
 package org.jboss.as.test.manualmode.parse;
 
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.AUTO_START;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.BOOT_TIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CORE_SERVICE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CPU_AFFINITY;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.INTERFACE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.MANAGEMENT;
@@ -33,15 +30,10 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAM
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OPERATION_HEADERS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PRIORITY;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROFILE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ROLLBACK_ON_RUNTIME_FAILURE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SERVER_CONFIG;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SOCKET_BINDING_GROUP;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SOCKET_BINDING_PORT_OFFSET;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SYSTEM_PROPERTY;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VAULT;
 
 import java.io.ByteArrayInputStream;
@@ -94,7 +86,6 @@ import org.jboss.as.controller.operations.common.InterfaceCriteriaWriteHandler;
 import org.jboss.as.controller.operations.common.NamespaceAddHandler;
 import org.jboss.as.controller.operations.common.SchemaLocationAddHandler;
 import org.jboss.as.controller.operations.common.SystemPropertyAddHandler;
-import org.jboss.as.controller.operations.common.SystemPropertyValueWriteAttributeHandler;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.operations.common.XmlMarshallingHandler;
 import org.jboss.as.controller.operations.global.WriteAttributeHandlers;
@@ -122,7 +113,6 @@ import org.jboss.as.host.controller.operations.IsMasterHandler;
 import org.jboss.as.host.controller.operations.LocalDomainControllerAddHandler;
 import org.jboss.as.host.controller.operations.LocalHostControllerInfoImpl;
 import org.jboss.as.host.controller.operations.RemoteDomainControllerAddHandler;
-import org.jboss.as.host.controller.operations.ServerAddHandler;
 import org.jboss.as.host.controller.parsing.DomainXml;
 import org.jboss.as.host.controller.parsing.HostXml;
 import org.jboss.as.host.controller.resources.HttpManagementResourceDefinition;
@@ -134,7 +124,6 @@ import org.jboss.as.repository.HostFileRepository;
 import org.jboss.as.security.vault.RuntimeVaultReader;
 import org.jboss.as.server.ServerControllerModelUtil;
 import org.jboss.as.server.parsing.StandaloneXml;
-import org.jboss.as.server.services.net.SpecifiedInterfaceAddHandler;
 import org.jboss.as.server.services.security.VaultAddHandler;
 import org.jboss.as.test.shared.FileUtils;
 import org.jboss.dmr.ModelNode;
@@ -256,8 +245,8 @@ public class ParseAndMarshalModelsTestCase {
     }
 
     @Test
-    public void testStandaloneOSGiOnlyXml() throws Exception {
-        standaloneXmlTest(getGeneratedExampleConfigFile("standalone-osgi-only.xml"));
+    public void testStandaloneOSGiXml() throws Exception {
+        standaloneXmlTest(getGeneratedExampleConfigFile("standalone-osgi.xml"));
     }
 
     @Test
