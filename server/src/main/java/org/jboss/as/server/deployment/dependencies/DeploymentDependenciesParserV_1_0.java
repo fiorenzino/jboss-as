@@ -42,6 +42,7 @@ import static org.jboss.as.controller.parsing.ParseUtils.unexpectedElement;
 
 /**
  * @author Stuart Douglas
+ * @author Thomas.Diesler@jboss.com
  */
 class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentDependencies> {
 
@@ -52,6 +53,8 @@ class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentD
     enum Element {
         JBOSS_DEPLOYMENT_DEPENDENCIES,
         DEPENDENCY,
+        PROPERTIES,
+        PROPERTY,
 
         // default unknown element
         UNKNOWN;
@@ -62,6 +65,8 @@ class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentD
             Map<QName, Element> elementsMap = new HashMap<QName, Element>();
             elementsMap.put(new QName(NAMESPACE_1_0, "jboss-deployment-dependencies"), Element.JBOSS_DEPLOYMENT_DEPENDENCIES);
             elementsMap.put(new QName(NAMESPACE_1_0, "dependency"), Element.DEPENDENCY);
+            elementsMap.put(new QName(NAMESPACE_1_0, "properties"), Element.PROPERTIES);
+            elementsMap.put(new QName(NAMESPACE_1_0, "property"), Element.PROPERTY);
             elements = elementsMap;
         }
 
@@ -80,7 +85,7 @@ class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentD
     enum Attribute {
         UNKNOWN(null),
 
-        NAME("name"),;
+        NAME("name");
 
         private final String name;
 
@@ -139,6 +144,9 @@ class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentD
                         case DEPENDENCY:
                             parseDependency(reader, dependencies);
                             break;
+                        case PROPERTIES:
+                            parseProperties(reader, dependencies);
+                            break;
                         default:
                             throw ParseUtils.unexpectedElement(reader);
                     }
@@ -170,10 +178,63 @@ class DeploymentDependenciesParserV_1_0 implements JBossAllXMLParser<DeploymentD
         if (!required.isEmpty()) {
             throw missingRequired(reader, required);
         }
-        dependencies.getDependencies().add(name);
+        dependencies.addDependency(name);
 
         if (reader.hasNext() && reader.nextTag() != XMLStreamConstants.END_ELEMENT) {
             throw unexpectedElement(reader);
         }
+    }
+
+    private void parseProperties(final XMLExtendedStreamReader reader, final DeploymentDependencies dependencies) throws XMLStreamException {
+
+        final int count = reader.getAttributeCount();
+        if (count != 0) {
+            throw ParseUtils.unexpectedAttribute(reader, 0);
+        }
+
+        while (reader.hasNext()) {
+            switch (reader.nextTag()) {
+                case XMLStreamConstants.END_ELEMENT: {
+                    return;
+                }
+                case XMLStreamConstants.START_ELEMENT: {
+                    final Element element = Element.of(reader.getName());
+                    switch (element) {
+                        case PROPERTY:
+                            parseProperty(reader, dependencies);
+                            break;
+                        default:
+                            throw ParseUtils.unexpectedElement(reader);
+                    }
+                    break;
+                }
+            }
+        }
+        throw ParseUtils.unexpectedEndElement(reader);
+    }
+
+    private void parseProperty(final XMLExtendedStreamReader reader, final DeploymentDependencies dependencies) throws XMLStreamException {
+
+        final int count = reader.getAttributeCount();
+        String name = null;
+        final EnumSet<Attribute> required = EnumSet.of(Attribute.NAME);
+        for (int i = 0; i < count; i++) {
+            requireNoNamespaceAttribute(reader, i);
+            final String attval = reader.getAttributeValue(i);
+            final Attribute attribute = Attribute.forName(reader.getAttributeLocalName(i));
+            required.remove(attribute);
+            switch (attribute) {
+                case NAME:
+                    name = attval;
+                    break;
+                default:
+                    throw unexpectedAttribute(reader, i);
+            }
+        }
+        if (!required.isEmpty()) {
+            throw missingRequired(reader, required);
+        }
+        String value = reader.getElementText().trim();
+        dependencies.addProperty(name, value);
     }
 }

@@ -52,11 +52,36 @@
                     </documentation>
                 </annotation>
             </xsd:element>
+            <xsd:element name="properties" type="propertiesType" minOccurs="0" maxOccurs="1" >
+                <annotation xmlns="http://www.w3.org/2001/XMLSchema">
+                    <documentation>
+                        Element containing properties for the top level deployment.
+                    </documentation>
+                </annotation>
+            </xsd:element>
         </xsd:sequence>
-
     </xsd:complexType>
+    
     <xsd:complexType name="dependencyType">
         <xsd:attribute name="name" type="xsd:string" use="required" />
     </xsd:complexType>
+
+    <xsd:complexType name="propertiesType">
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="property" type="propertyType"/>
+        </xsd:choice>
+    </xsd:complexType>
+
+    <xsd:complexType name="propertyType">
+        <xsd:simpleContent>
+            <xsd:extension base="propertyValueType">
+                <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:simpleType name="propertyValueType">
+      <xsd:restriction base="xsd:string"/>
+    </xsd:simpleType>
 </xsd:schema>
 

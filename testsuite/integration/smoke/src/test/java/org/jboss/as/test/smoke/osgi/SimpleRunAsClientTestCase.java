@@ -75,7 +75,7 @@ public class SimpleRunAsClientTestCase {
         deployer.deploy(DEPLOYMENT_NAME);
         try {
             Long bundleId = getBundleId(getControllerClient(), SYMBOLIC_NAME, null);
-            Assert.assertNotNull("Bundle found", bundleId);
+            Assert.assertTrue("Bundle found", bundleId > 0);
             Assert.assertEquals("ACTIVE", getBundleState(getControllerClient(), bundleId));
 
             ModelNode info = getBundleInfo(getControllerClient(), bundleId);

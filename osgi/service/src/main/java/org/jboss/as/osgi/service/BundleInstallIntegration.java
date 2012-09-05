@@ -29,11 +29,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentHelper;
 import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentManager;
-import org.jboss.as.server.deployment.client.ModelControllerServerDeploymentManager;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -62,7 +63,7 @@ public final class BundleInstallIntegration implements BundleInstallPlugin, Inte
 
     private final InjectedValue<ModelController> injectedController = new InjectedValue<ModelController>();
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private ServerDeploymentManager deploymentManager;
+    private ModelControllerClient controllerClient;
 
     @Override
     public ServiceName getServiceName() {
@@ -83,7 +84,7 @@ public final class BundleInstallIntegration implements BundleInstallPlugin, Inte
     public void start(StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
         LOGGER.tracef("Starting: %s in mode %s", controller.getName(), controller.getMode());
-        deploymentManager = new ModelControllerServerDeploymentManager(injectedController.getValue());
+        controllerClient = injectedController.getValue().createClient(Executors.newCachedThreadPool());
     }
 
     @Override
@@ -117,7 +118,7 @@ public final class BundleInstallIntegration implements BundleInstallPlugin, Inte
             // Build and execute the deployment plan
             InputStream input = dep.getRoot().openStream();
             try {
-                ServerDeploymentHelper server = new ServerDeploymentHelper(deploymentManager);
+                ServerDeploymentHelper server = new ServerDeploymentHelper(controllerClient);
                 server.deploy(contextName, input);
             } finally {
                 if(input != null) try {
@@ -137,7 +138,7 @@ public final class BundleInstallIntegration implements BundleInstallPlugin, Inte
     public void uninstallBundle(Deployment dep) {
         LOGGER.tracef("Uninstall deployment: %s", dep);
         try {
-            ServerDeploymentHelper server = new ServerDeploymentHelper(deploymentManager);
+            ServerDeploymentHelper server = new ServerDeploymentHelper(controllerClient);
             server.undeploy(getContextName(dep));
         } catch (Exception ex) {
             LOGGER.warnCannotUndeployBundle(ex, dep);

@@ -23,20 +23,41 @@
 package org.jboss.as.server.deployment.dependencies;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 import org.jboss.as.server.deployment.AttachmentKey;
 
 /**
  * @author Stuart Douglas
+ * @author Thomas.Diesler@jboss.com
  */
-class DeploymentDependencies {
+public class DeploymentDependencies {
 
     public static final AttachmentKey<DeploymentDependencies> ATTACHMENT_KEY = AttachmentKey.create(DeploymentDependencies.class);
 
     private final List<String> dependencies = new ArrayList<String>();
+    private final Map<String, String> properties = new HashMap<String,String>();
 
     public List<String> getDependencies() {
-        return dependencies;
+        return Collections.unmodifiableList(dependencies);
     }
+
+    void addDependency(String dependency) {
+        dependencies.add(dependency);
+    }
+
+    public Map<String, String> getProperties() {
+        return Collections.unmodifiableMap(properties);
+    }
+
+    public String getProperty(String key) {
+        return properties.get(key);
+    }
+
+    void addProperty(String key, String value) {
+        properties.put(key, value);
+    }
+
 }
