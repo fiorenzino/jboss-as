@@ -110,4 +110,8 @@ public interface OSGiLogger extends BasicLogger {
     @LogMessage(level = INFO)
     @Message(id = 11914, value = "Unregister HttpService alias: %s")
     void infoUnregisterHttpServiceAlias(String alias);
+
+    @LogMessage(level = WARN)
+    @Message(id = 11915, value = "Cannot remove deployment metadata for: %s")
+    void warnCannotRemoveDeploymentMetadata(@Cause Throwable cause, String runtimeName);
 }
