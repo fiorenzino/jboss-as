@@ -141,6 +141,43 @@ public class ServerDeploymentHelper {
         executeCompositeOperation(builder.build(), steps.asList().size());
     }
 
+    public void undeploy(String runtimeName, DeploymentOverlay overlay) throws ServerDeploymentException {
+
+        ModelNode op = new ModelNode();
+        OperationBuilder builder = new OperationBuilder(op);
+        op.get(OP).set(COMPOSITE);
+        op.get(OP_ADDR).setEmptyList();
+        ModelNode steps = op.get(STEPS);
+        steps.setEmptyList();
+
+        ModelNode step = new ModelNode();
+        ModelNode addr = new ModelNode();
+        addr.add(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
+        addr.add(CONTENT, overlay.getPath());
+        step.get(OP_ADDR).set(addr);
+        step.get(OP).set("remove");
+        steps.add(step);
+
+        step = new ModelNode();
+        builder = new OperationBuilder(op);
+        addr = new ModelNode();
+        addr.add(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
+        addr.add(DEPLOYMENT, runtimeName);
+        step.get(OP_ADDR).set(addr);
+        step.get(OP).set("remove");
+        steps.add(step);
+
+        step = new ModelNode();
+        builder = new OperationBuilder(op);
+        addr = new ModelNode();
+        addr.add(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
+        step.get(OP_ADDR).set(addr);
+        step.get(OP).set("remove");
+        steps.add(step);
+
+        executeCompositeOperation(builder.build(), steps.asList().size());
+    }
+
     private void executeCompositeOperation(Operation composite, int steps) throws ServerDeploymentException {
         ModelNode resultNode;
         try {
@@ -168,6 +205,26 @@ public class ServerDeploymentHelper {
         if (allgood == false) {
             throw new ServerDeploymentException(new ModelNode().toString());
         }
+    }
+
+    private void executeOperation(Operation operation) throws ServerDeploymentException {
+        ModelNode resultNode;
+        try {
+            Future<ModelNode> future = controllerClient.executeAsync(operation, null);
+            resultNode = future.get();
+        } catch (Exception ex) {
+            throw new ServerDeploymentException(ex);
+        }
+
+        // Process the result node
+        if (!SUCCESS.equals(resultNode.get(OUTCOME).asString())) {
+            ModelNode descriptionNode = resultNode.get(FAILURE_DESCRIPTION);
+            if (descriptionNode.isDefined()) {
+                throw new ServerDeploymentException(descriptionNode.toString());
+            }
+            throw new ServerDeploymentException(new ModelNode().toString());
+        }
+
     }
 
     public String replace(String runtimeName, String replaceName, InputStream input, boolean removeUndeployed) throws ServerDeploymentException {

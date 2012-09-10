@@ -96,6 +96,7 @@ public class SimpleDeploymentDescriptorTestCase {
             Assert.assertEquals("INSTALLED", getBundleState(getControllerClient(), bundleId));
         } finally {
             server.undeploy(new String[] { BUNDLE_B });
+            server.undeploy(BUNDLE_B, overlay);
         }
     }
 

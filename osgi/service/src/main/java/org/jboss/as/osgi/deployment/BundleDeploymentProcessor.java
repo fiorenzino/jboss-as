@@ -23,18 +23,26 @@
 package org.jboss.as.osgi.deployment;
 
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_METADATA_START_POLICY;
+import static org.jboss.as.server.Services.JBOSS_SERVER_CONTROLLER;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import javax.annotation.ManagedBean;
 
+import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.ClientConstants.StartPolicy;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.ee.structure.DeploymentType;
 import org.jboss.as.ee.structure.DeploymentTypeMarker;
 import org.jboss.as.osgi.DeploymentMarker;
 import org.jboss.as.osgi.OSGiConstants;
 import org.jboss.as.osgi.service.BundleInstallIntegration;
 import org.jboss.as.server.deployment.Attachments;
+import org.jboss.as.server.deployment.DeploymentModelUtils;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
@@ -44,13 +52,22 @@ import org.jboss.as.server.deployment.JPADeploymentMarker;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
 import org.jboss.as.server.deployment.dependencies.DeploymentDependencies;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
+import org.jboss.dmr.ModelNode;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.AbstractService;
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.BundleInfo;
 
 /**
@@ -131,12 +148,17 @@ public class BundleDeploymentProcessor implements DeploymentUnitProcessor {
     @Override
     public void undeploy(DeploymentUnit depUnit) {
         depUnit.removeAttachment(OSGiConstants.DEPLOYMENT_KEY);
+        if (getDeploymentMetadata(depUnit) != null) {
+
+        }
+        Resource resource = depUnit.getAttachment(DeploymentModelUtils.DEPLOYMENT_RESOURCE);
+        ModelNode model = resource.getModel();
     }
 
     static DeploymentDependencies getDeploymentMetadata(final DeploymentUnit depUnit) {
         DeploymentDependencies metadata = depUnit.getAttachment(DeploymentDependencies.ATTACHMENT_KEY);
         if (metadata == null && depUnit.getParent() != null) {
-            metadata = depUnit.getParent().getAttachment(DeploymentDependencies.ATTACHMENT_KEY);
+            metadata = getDeploymentMetadata(depUnit.getParent());
         }
         return metadata != null ? metadata : new DeploymentDependencies();
     }
@@ -144,5 +166,39 @@ public class BundleDeploymentProcessor implements DeploymentUnitProcessor {
     static StartPolicy getStartPolicy(DeploymentUnit depUnit) {
         DeploymentDependencies metadata = getDeploymentMetadata(depUnit);
         return StartPolicy.parse(metadata.getProperties().get(DEPLOYMENT_METADATA_START_POLICY));
+    }
+
+    static class DeploymentMetadataRemoveService extends AbstractService<Void> {
+
+        private final InjectedValue<ModelController> injectedController = new InjectedValue<ModelController>();
+        private final DeploymentUnit depUnit;
+
+        static void addService(ServiceTarget serviceTarget, DeploymentUnit depUnit, XBundle bundle) {
+            ServiceName serviceName = depUnit.getServiceName().append("RemoveOverlay");
+            DeploymentMetadataRemoveService service = new DeploymentMetadataRemoveService(depUnit);
+            ServiceBuilder<Void> builder = serviceTarget.addService(serviceName, service);
+            builder.addDependency(JBOSS_SERVER_CONTROLLER, ModelController.class, service.injectedController);
+            builder.install();
+        }
+
+        private DeploymentMetadataRemoveService(DeploymentUnit depUnit) {
+            this.depUnit = depUnit;
+        }
+
+        @Override
+        public void start(StartContext context) throws StartException {
+            ModelNode op = new ModelNode();
+            op.get(ModelDescriptionConstants.OP_ADDR).set(ModelDescriptionConstants.DEPLOYMENT_OVERLAY);
+            op.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_CHILDREN_RESOURCES_OPERATION);
+            ModelController modelController = injectedController.getValue();
+            ModelControllerClient client = modelController.createClient(Executors.newCachedThreadPool());
+            try {
+                client.execute(op);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+        }
     }
 }
