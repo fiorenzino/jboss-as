@@ -17,20 +17,19 @@
 package org.jboss.as.controller.client.helpers.standalone;
 
 import static org.jboss.as.controller.client.helpers.ClientConstants.ADD;
+import static org.jboss.as.controller.client.helpers.ClientConstants.COMPOSITE;
 import static org.jboss.as.controller.client.helpers.ClientConstants.CONTENT;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_DEPLOY_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.DEPLOYMENT_OVERLAY_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.FAILURE_DESCRIPTION;
-import static org.jboss.as.controller.client.helpers.ClientConstants.HASH;
 import static org.jboss.as.controller.client.helpers.ClientConstants.INPUT_STREAM_INDEX;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OP;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OP_ADDR;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OUTCOME;
-import static org.jboss.as.controller.client.helpers.ClientConstants.RESULT;
 import static org.jboss.as.controller.client.helpers.ClientConstants.RUNTIME_NAME;
+import static org.jboss.as.controller.client.helpers.ClientConstants.STEPS;
 import static org.jboss.as.controller.client.helpers.ClientConstants.SUCCESS;
-import static org.jboss.as.controller.client.helpers.ClientConstants.UPLOAD_DEPLOYMENT_STREAM;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,74 +92,53 @@ public class ServerDeploymentHelper {
 
     public void deploy(String runtimeName, InputStream input, DeploymentOverlay overlay) throws ServerDeploymentException {
 
+        int streamIndex = 0;
         ModelNode op = new ModelNode();
         OperationBuilder builder = new OperationBuilder(op);
-        op.get(OP_ADDR).set(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
-        op.get(OP).set(ADD);
-        executeOperation(builder.build());
+        op.get(OP).set(COMPOSITE);
+        op.get(OP_ADDR).setEmptyList();
+        ModelNode steps = op.get(STEPS);
+        steps.setEmptyList();
 
-        op = new ModelNode();
-        builder = new OperationBuilder(op);
-        op.get(OP_ADDR).set(new ModelNode());
-        op.get(OP).set(UPLOAD_DEPLOYMENT_STREAM);
-        op.get(INPUT_STREAM_INDEX).set(0);
-        builder.addInputStream(overlay.getContent());
-        ModelNode result = executeOperation(builder.build());
+        ModelNode step = new ModelNode();
+        step.get(OP_ADDR).set(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
+        step.get(OP).set(ADD);
+        steps.add(step);
 
-        op = new ModelNode();
-        builder = new OperationBuilder(op);
+        step = new ModelNode();
         ModelNode addr = new ModelNode();
         addr.add(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
         addr.add(CONTENT, overlay.getPath());
-        op.get(OP_ADDR).set(addr);
-        op.get(OP).set(ADD);
-        op.get(CONTENT).get(HASH).set(result.get(RESULT));
-        executeOperation(builder.build());
+        step.get(OP_ADDR).set(addr);
+        step.get(OP).set(ADD);
+        ModelNode content = new ModelNode();
+        content.get(INPUT_STREAM_INDEX).set(streamIndex++);
+        builder.addInputStream(overlay.getContent());
+        step.get(CONTENT).set(content);
+        steps.add(step);
 
-        op = new ModelNode();
-        builder = new OperationBuilder(op);
+        step = new ModelNode();
         addr = new ModelNode();
         addr.add(DEPLOYMENT_OVERLAY_OPERATION, overlay.getRuntimeName(runtimeName));
         addr.add(DEPLOYMENT, runtimeName);
-        op.get(OP_ADDR).set(addr);
-        op.get(OP).set(ADD);
-        executeOperation(builder.build());
+        step.get(OP_ADDR).set(addr);
+        step.get(OP).set(ADD);
+        steps.add(step);
 
-        op = new ModelNode();
-        builder = new OperationBuilder(op);
-        op.get(OP).set(ADD);
-        op.get(OP_ADDR).add(DEPLOYMENT, runtimeName);
-        op.get(RUNTIME_NAME).set(runtimeName);
+        step = new ModelNode();
+        step.get(OP).set(ADD);
+        step.get(OP_ADDR).add(DEPLOYMENT, runtimeName);
+        step.get(RUNTIME_NAME).set(runtimeName);
         builder.addInputStream(input);
-        op.get(CONTENT).get(0).get(INPUT_STREAM_INDEX).set(0);
-        executeOperation(builder.build());
+        step.get(CONTENT).get(0).get(INPUT_STREAM_INDEX).set(streamIndex++);
+        steps.add(step);
 
-        op = new ModelNode();
-        builder = new OperationBuilder(op);
-        op.get(OP).set(DEPLOYMENT_DEPLOY_OPERATION);
-        op.get(OP_ADDR).add(DEPLOYMENT, runtimeName);
-        executeOperation(builder.build());
-    }
+        step = new ModelNode();
+        step.get(OP).set(DEPLOYMENT_DEPLOY_OPERATION);
+        step.get(OP_ADDR).add(DEPLOYMENT, runtimeName);
+        steps.add(step);
 
-    private ModelNode executeOperation(Operation operation) throws ServerDeploymentException {
-        ModelNode resultNode;
-        try {
-            Future<ModelNode> future = controllerClient.executeAsync(operation, null);
-            resultNode = future.get();
-        } catch (Exception ex) {
-            throw new ServerDeploymentException(ex);
-        }
-
-        // Process the result node
-        if (SUCCESS.equals(resultNode.get(OUTCOME).asString()) == false) {
-            ModelNode descriptionNode = resultNode.get(FAILURE_DESCRIPTION);
-            if (descriptionNode.isDefined()) {
-                throw new ServerDeploymentException(descriptionNode.toString());
-            }
-            throw new ServerDeploymentException(new ModelNode().toString());
-        }
-
-        return resultNode;
+        executeCompositeOperation(builder.build(), steps.asList().size());
     }
 
     private void executeCompositeOperation(Operation composite, int steps) throws ServerDeploymentException {
