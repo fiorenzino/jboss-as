@@ -7,7 +7,7 @@
        <?CAPABILITIES?>
    </subsystem>
    <supplement name="default">
-      <replacement placeholder="@@activation@@" attributeValue="lazy"/>
+      <replacement placeholder="@@activation@@" attributeValue="eager"/>
       <replacement placeholder="PROPERTIES">
 	       <properties>
 	           <!-- Specifies the beginning start level of the framework -->
@@ -29,6 +29,19 @@
 	           <capability name="org.jboss.osgi.logging" startlevel="1"/>
 	           <capability name="org.apache.felix.configadmin" startlevel="1"/>
 	           <capability name="org.jboss.as.osgi.configadmin" startlevel="1"/>
+	           <!-- karaf integration -->
+				<capability name="org.apache.servicemix.bundles:org.apache.servicemix.bundles.asm:3.3.1_1" startlevel="1"/>
+				<capability name="org.apache.aries:org.apache.aries.util:0.3.1" startlevel="1"/>
+				<capability name="org.apache.aries.proxy:org.apache.aries.proxy:0.3.1" startlevel="1"/>
+				<capability name="org.apache.aries.blueprint:org.apache.aries.blueprint:0.3.2" startlevel="1"/>
+				<capability name="org.apache.karaf.jaas:org.apache.karaf.jaas.config:2.2.9" startlevel="1"/>
+				<capability name="org.apache.karaf.jaas:org.apache.karaf.jaas.modules:2.2.9" startlevel="1"/>
+				<capability name="org.apache.karaf.shell:org.apache.karaf.shell.console:2.2.9" startlevel="1"/>
+				<capability name="org.apache.karaf.shell:org.apache.karaf.shell.commands:2.2.9" startlevel="1"/>
+				<capability name="org.apache.karaf.shell:org.apache.karaf.shell.osgi:2.2.9" startlevel="1"/>
+				<capability name="org.apache.mina:mina-core:2.0.1" startlevel="1"/>
+				<capability name="org.apache.sshd:sshd-core:0.7.0" startlevel="1"/>
+				<capability name="org.apache.karaf.shell:org.apache.karaf.shell.ssh:2.2.9" startlevel="1"/>
 	       </capabilities>
       </replacement>
    </supplement>
